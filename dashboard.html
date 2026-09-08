@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoAlerta - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<header>
+    <h1 style="font-size: 28px; color: #1a4d4e; margin-bottom: 0;">🌊 EcoAlerta</h1>
+    <p class="slogan-header">Panel de control — Monitoreo y gestión</p>
+</header>
+
+<main>
+    <!-- Estadísticas -->
+    <section class="estadisticas">
+        <div class="tarjeta-estadistica">
+            <h3>📋 Total reportes</h3>
+            <p id="total-reportes">0</p>
+        </div>
+        <div class="tarjeta-estadistica">
+            <h3>🟢 Solucionados</h3>
+            <p id="total-solucionados">0</p>
+        </div>
+        <div class="tarjeta-estadistica">
+            <h3>🔴 Pendientes</h3>
+            <p id="total-pendientes">0</p>
+        </div>
+        <div class="tarjeta-estadistica">
+            <h3>📍 Puntos de monitoreo</h3>
+            <p id="total-puntos">1</p>
+        </div>
+    </section>
+
+    <!-- Dos columnas: Sensor + Reportes -->
+    <div class="contenedor-doble">
+        <!-- Columna izquierda: Sensor -->
+        <section class="columna-sensor">
+            <div id="contenedor-sensor">
+                <!-- Cargado por JavaScript -->
+            </div>
+        </section>
+
+        <!-- Columna derecha: Reportes -->
+        <section class="columna-reportes">
+            <h2>📋 Reportes ciudadanos</h2>
+            <div id="contenedor-tabla">
+                <table id="tabla-reportes">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Ubicación</th>
+                        <th>Dirección</th>
+                        <th>Tipo</th>
+                        <th>Gravedad</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                    </thead>
+                    <tbody id="cuerpo-tabla">
+                    <!-- Cargado por JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer>
+    <p>EcoAlerta — Dashboard administrativo</p>
+    <p>Angie Rodríguez</p>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

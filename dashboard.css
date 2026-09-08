@@ -1,0 +1,264 @@
+* /* ====================================
+     TIPOGRAFÍAS GLOBALES (DASHBOARD)
+     ==================================== */
+  body {
+      font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
+      /* ... el resto de tu código */
+  }
+
+  h1, h2, h3, h4 {
+      font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+      font-weight: 700;
+  }
+
+  button, select, input, textarea {
+      font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
+  }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(to bottom, #dff6f3, #ffffff);
+    min-height: 100vh;
+    padding-bottom: 60px;
+}
+
+/* --- Encabezado --- */
+header {
+    background: white;
+    padding: 20px 20px 10px 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 30px;
+}
+
+.logo-header {
+    max-height: 70px;
+    width: auto;
+    display: block;
+    margin: 0 auto 6px auto;
+}
+
+.slogan-header {
+    font-size: 16px;
+    color: #2c7a7b;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* --- Contenedor principal --- */
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* --- Estadísticas --- */
+.estadisticas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-bottom: 35px;
+}
+
+.tarjeta-estadistica {
+    background: white;
+    padding: 18px 14px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border-left: 5px solid #2c7a7b;
+}
+
+.tarjeta-estadistica h3 {
+    font-size: 15px;
+    color: #3d5a5c;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.tarjeta-estadistica p {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a4d4e;
+}
+
+/* --- Dos columnas --- */
+.contenedor-doble {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.columna-mapa,
+.columna-reportes {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.columna-mapa h2,
+.columna-reportes h2 {
+    font-size: 20px;
+    color: #1a4d4e;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #dff6f3;
+    padding-bottom: 10px;
+}
+
+/* --- Mapa --- */
+#mapa {
+    height: 380px;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid #e0edec;
+}
+
+.nota-mapa {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #6f8f90;
+    text-align: center;
+}
+
+/* --- Tabla --- */
+#contenedor-tabla {
+    overflow-x: auto;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead {
+    position: sticky;
+    top: 0;
+    background: #f0f7f6;
+    z-index: 2;
+}
+
+th {
+    text-align: left;
+    padding: 12px 10px;
+    color: #1a4d4e;
+    font-weight: 600;
+    border-bottom: 2px solid #cde0de;
+}
+
+td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #e8f0ef;
+    vertical-align: middle;
+}
+
+tr:hover {
+    background: #f8fcfb;
+}
+
+/* --- Etiquetas de estado --- */
+.estado-reportado {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.estado-en_revision {
+    background: #fef9c3;
+    color: #854d0e;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.estado-en_proceso {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.estado-solucionado {
+    background: #dcfce7;
+    color: #166534;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* --- Selector de estado --- */
+select.estado-select {
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+select.estado-select:focus {
+    outline: 2px solid #2c7a7b;
+    outline-offset: 1px;
+}
+
+/* --- Pie de página --- */
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    padding: 12px 0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(4px);
+    font-size: 13px;
+    color: #4a6b6c;
+    border-top: 1px solid #d4e6e4;
+}
+
+footer p {
+    margin: 2px 0;
+}
+
+/* --- Responsive --- */
+@media (max-width: 950px) {
+    .contenedor-doble {
+        grid-template-columns: 1fr;
+    }
+    #mapa {
+        height: 300px;
+    }
+}
+
+@media (max-width: 500px) {
+    .estadisticas {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .logo-header {
+        max-height: 50px;
+    }
+    .slogan-header {
+        font-size: 14px;
+    }
+}

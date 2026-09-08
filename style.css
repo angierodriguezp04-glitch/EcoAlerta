@@ -1,0 +1,232 @@
+/* ====================================
+   ECOALERTA - ESTILOS PRINCIPALES
+   ==================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', Arial, sans-serif;
+}
+
+body {
+    background: linear-gradient(to bottom, #dff6f3, #ffffff);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding-bottom: 80px;
+}
+
+/* --- Encabezado --- */
+header {
+    margin-bottom: 20px;
+}
+
+.logo-header {
+    max-height: 70px;
+    width: auto;
+    display: block;
+    margin: 0 auto 6px auto;
+}
+
+.slogan-header {
+    font-size: 16px;
+    color: #2c7a7b;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* --- Contenido principal --- */
+#contenido {
+    width: 90%;
+    max-width: 500px;
+    margin: 10px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+#contenido h2 {
+    font-size: 28px;
+    color: #1a4d4e;
+    margin-bottom: 12px;
+}
+
+#contenido p {
+    font-size: 18px;
+    color: #3d5a5c;
+    line-height: 1.6;
+}
+
+/* --- Formulario de reporte --- */
+#formReporte label {
+    display: block;
+    text-align: left;
+    margin-top: 16px;
+    font-weight: 600;
+    color: #1a4d4e;
+    font-size: 15px;
+}
+
+#formReporte select,
+#formReporte textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cde0de;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'Poppins', Arial, sans-serif;
+    background: #f9fcfb;
+    margin-top: 4px;
+}
+
+#formReporte textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+#formReporte button[type="submit"] {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    background: #1a4d4e;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#formReporte button[type="submit"]:hover {
+    background: #0f3a3b;
+}
+
+/* --- Botones generales --- */
+button {
+    padding: 12px 24px;
+    font-size: 16px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Poppins', Arial, sans-serif;
+    transition: background 0.2s;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+/* --- Navegación inferior --- */
+nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0;
+    background: white;
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+}
+
+nav button {
+    background: none;
+    border: none;
+    padding: 8px 6px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Poppins', Arial, sans-serif;
+    color: #2c5a5b;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+nav button:hover {
+    color: #0f3a3b;
+}
+
+/* --- Pie de página --- */
+footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: #6f8f90;
+}
+
+/* --- Perfil, Registro, Login --- */
+.perfil,
+.registro,
+.login {
+    width: 90%;
+    max-width: 400px;
+    margin: 10px auto;
+    text-align: center;
+}
+
+.perfil h2,
+.registro h2,
+.login h2 {
+    margin-bottom: 10px;
+}
+
+.perfil p,
+.registro p,
+.login p {
+    margin-bottom: 20px;
+}
+
+.perfil button,
+.registro button,
+.login button {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.registro label,
+.login label {
+    display: block;
+    text-align: left;
+    margin-top: 16px;
+    font-weight: 600;
+    color: #1a4d4e;
+}
+
+.registro input,
+.login input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cde0de;
+    border-radius: 12px;
+    font-size: 16px;
+    margin-top: 4px;
+}
+
+/* --- Mapa (dentro de la app) --- */
+#mapaApp {
+    height: 350px;
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid #e0edec;
+    margin: 12px 0;
+}
+
+/* --- Responsive --- */
+@media (max-width: 500px) {
+    .logo-header {
+        max-height: 50px;
+    }
+    #contenido h2 {
+        font-size: 24px;
+    }
+    nav button {
+        font-size: 12px;
+        padding: 6px 4px;
+    }
+}
