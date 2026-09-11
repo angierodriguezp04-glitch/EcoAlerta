@@ -1,137 +1,124 @@
-* /* ====================================
-     TIPOGRAFÍAS GLOBALES (DASHBOARD)
-     ==================================== */
-  body {
-      font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
-      /* ... el resto de tu código */
-  }
+/* ====================================
+   DASHBOARD ECOALERTA - Diseño mejorado
+   ==================================== */
 
-  h1, h2, h3, h4 {
-      font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
-      font-weight: 700;
-  }
-
-  button, select, input, textarea {
-      font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
-  }
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Poppins', Arial, sans-serif;
 }
 
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
     background: linear-gradient(to bottom, #dff6f3, #ffffff);
     min-height: 100vh;
-    padding-bottom: 60px;
+    padding-bottom: 80px;
+    color: #1a4d4e;
 }
 
-/* --- Encabezado --- */
+/* ===== ENCABEZADO ===== */
 header {
     background: white;
-    padding: 20px 20px 10px 20px;
+    padding: 24px 30px 18px 30px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
     margin-bottom: 30px;
+    border-bottom: 3px solid #dff6f3;
 }
 
-.logo-header {
-    max-height: 70px;
-    width: auto;
-    display: block;
-    margin: 0 auto 6px auto;
+header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a4d4e;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
 }
 
 .slogan-header {
-    font-size: 16px;
+    font-size: 15px;
     color: #2c7a7b;
     font-weight: 500;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
 }
 
-/* --- Contenedor principal --- */
+/* ===== CONTENEDOR PRINCIPAL ===== */
 main {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 25px;
 }
 
-/* --- Estadísticas --- */
+/* ===== ESTADÍSTICAS ===== */
 .estadisticas {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 18px;
     margin-bottom: 35px;
 }
 
 .tarjeta-estadistica {
     background: white;
-    padding: 18px 14px;
+    padding: 18px 16px;
     border-radius: 16px;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
     border-left: 5px solid #2c7a7b;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.tarjeta-estadistica:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Colores específicos por tarjeta */
+.tarjeta-estadistica:nth-child(1) { border-left-color: #2c7a7b; }  /* Total - verde */
+.tarjeta-estadistica:nth-child(2) { border-left-color: #991b1b; }  /* Reportados - rojo */
+.tarjeta-estadistica:nth-child(3) { border-left-color: #d97706; }  /* En revisión - amarillo */
+.tarjeta-estadistica:nth-child(4) { border-left-color: #1e40af; }  /* En proceso - azul */
+.tarjeta-estadistica:nth-child(5) { border-left-color: #166534; }  /* Solucionados - verde oscuro */
+
 .tarjeta-estadistica h3 {
-    font-size: 15px;
+    font-size: 14px;
     color: #3d5a5c;
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .tarjeta-estadistica p {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 700;
     color: #1a4d4e;
+    line-height: 1;
 }
 
-/* --- Dos columnas --- */
-.contenedor-doble {
-    display: grid;
-    grid-template-columns: 1fr 1.8fr;
-    gap: 30px;
-    align-items: start;
-}
-
-.columna-mapa,
-.columna-reportes {
+/* ===== SECCIÓN DE REPORTES ===== */
+.seccion-reportes {
     background: white;
     border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    padding: 26px 28px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    border-top: 4px solid #2c7a7b;
 }
 
-.columna-mapa h2,
-.columna-reportes h2 {
-    font-size: 20px;
+.seccion-reportes h2 {
+    font-size: 22px;
     color: #1a4d4e;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
     border-bottom: 2px solid #dff6f3;
-    padding-bottom: 10px;
+    font-weight: 600;
 }
 
-/* --- Mapa --- */
-#mapa {
-    height: 380px;
-    width: 100%;
-    border-radius: 12px;
-    border: 1px solid #e0edec;
-}
-
-.nota-mapa {
-    margin-top: 10px;
-    font-size: 13px;
-    color: #6f8f90;
-    text-align: center;
-}
-
-/* --- Tabla --- */
+/* ===== TABLA ===== */
 #contenedor-tabla {
     overflow-x: auto;
-    max-height: 420px;
+    max-height: 600px;
     overflow-y: auto;
+    border-radius: 12px;
 }
 
 table {
@@ -149,88 +136,107 @@ thead {
 
 th {
     text-align: left;
-    padding: 12px 10px;
+    padding: 14px 12px;
     color: #1a4d4e;
     font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     border-bottom: 2px solid #cde0de;
+    white-space: nowrap;
 }
 
 td {
-    padding: 10px 10px;
+    padding: 12px;
     border-bottom: 1px solid #e8f0ef;
     vertical-align: middle;
+    color: #3d5a5c;
 }
 
-tr:hover {
+tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:hover {
     background: #f8fcfb;
+    transition: background 0.15s;
 }
 
-/* --- Etiquetas de estado --- */
+/* ===== ETIQUETAS DE ESTADO ===== */
+.estado-reportado,
+.estado-en_revision,
+.estado-en_proceso,
+.estado-solucionado {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-block;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
 .estado-reportado {
     background: #fee2e2;
     color: #991b1b;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
 }
 
 .estado-en_revision {
     background: #fef9c3;
     color: #854d0e;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
 }
 
 .estado-en_proceso {
     background: #dbeafe;
     color: #1e40af;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
 }
 
 .estado-solucionado {
     background: #dcfce7;
     color: #166534;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
 }
 
-/* --- Selector de estado --- */
+/* ===== SELECTOR DE ESTADO ===== */
 select.estado-select {
-    padding: 5px 8px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: 1.5px solid #cde0de;
     background: white;
     font-size: 13px;
+    font-family: 'Poppins', Arial, sans-serif;
+    color: #1a4d4e;
     cursor: pointer;
+    font-weight: 500;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    min-width: 140px;
+}
+
+select.estado-select:hover {
+    border-color: #2c7a7b;
 }
 
 select.estado-select:focus {
-    outline: 2px solid #2c7a7b;
-    outline-offset: 1px;
+    outline: none;
+    border-color: #2c7a7b;
+    box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.15);
 }
 
-/* --- Pie de página --- */
+select.estado-select:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* ===== PIE DE PÁGINA ===== */
 footer {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     text-align: center;
-    padding: 12px 0;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(4px);
+    padding: 14px 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(6px);
     font-size: 13px;
     color: #4a6b6c;
     border-top: 1px solid #d4e6e4;
@@ -240,25 +246,48 @@ footer p {
     margin: 2px 0;
 }
 
-/* --- Responsive --- */
-@media (max-width: 950px) {
-    .contenedor-doble {
-        grid-template-columns: 1fr;
+/* ===== SCROLL PERSONALIZADO ===== */
+#contenedor-tabla::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+#contenedor-tabla::-webkit-scrollbar-track {
+    background: #f0f7f6;
+    border-radius: 10px;
+}
+
+#contenedor-tabla::-webkit-scrollbar-thumb {
+    background: #b8d4d2;
+    border-radius: 10px;
+}
+
+#contenedor-tabla::-webkit-scrollbar-thumb:hover {
+    background: #2c7a7b;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+    .estadisticas {
+        grid-template-columns: repeat(2, 1fr);
     }
-    #mapa {
-        height: 300px;
+    header h1 {
+        font-size: 24px;
+    }
+    .seccion-reportes {
+        padding: 18px 16px;
+    }
+    th, td {
+        padding: 10px 8px;
+        font-size: 13px;
     }
 }
 
 @media (max-width: 500px) {
     .estadisticas {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        grid-template-columns: 1fr;
     }
-    .logo-header {
-        max-height: 50px;
-    }
-    .slogan-header {
-        font-size: 14px;
+    main {
+        padding: 0 12px;
     }
 }

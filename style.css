@@ -17,25 +17,26 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding-bottom: 80px;
+    padding-bottom: 90px;
 }
 
 /* --- Encabezado --- */
 header {
     margin-bottom: 20px;
+    padding: 10px 20px;
 }
 
 .logo-header {
-    max-height: 70px;
+    max-height: 95px;      /* <-- ANTES ERA 70px (más grande) */
     width: auto;
     display: block;
-    margin: 0 auto 6px auto;
+    margin: 0 auto 8px auto;
 }
 
 .slogan-header {
-    font-size: 16px;
+    font-size: 19px;       /* <-- ANTES ERA 16px (más grande) */
     color: #2c7a7b;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 1px;
 }
 
@@ -44,20 +45,20 @@ header {
     width: 90%;
     max-width: 500px;
     margin: 10px auto;
-    padding: 20px;
+    padding: 24px;
     background: white;
     border-radius: 24px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 #contenido h2 {
-    font-size: 28px;
+    font-size: 26px;
     color: #1a4d4e;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 #contenido p {
-    font-size: 18px;
+    font-size: 16px;
     color: #3d5a5c;
     line-height: 1.6;
 }
@@ -73,7 +74,8 @@ header {
 }
 
 #formReporte select,
-#formReporte textarea {
+#formReporte textarea,
+#formReporte input[type="text"] {
     width: 100%;
     padding: 10px 14px;
     border: 1px solid #cde0de;
@@ -97,7 +99,7 @@ header {
     color: white;
     border: none;
     border-radius: 14px;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
@@ -110,16 +112,19 @@ header {
 /* --- Botones generales --- */
 button {
     padding: 12px 24px;
-    font-size: 16px;
+    font-size: 15px;
     border: none;
     border-radius: 12px;
     cursor: pointer;
     font-family: 'Poppins', Arial, sans-serif;
+    background: #e6f4f2;
+    color: #1a4d4e;
+    font-weight: 500;
     transition: background 0.2s;
 }
 
 button:hover {
-    opacity: 0.85;
+    background: #d1e9e6;
 }
 
 /* --- Navegación inferior --- */
@@ -164,9 +169,7 @@ footer {
 .perfil,
 .registro,
 .login {
-    width: 90%;
-    max-width: 400px;
-    margin: 10px auto;
+    width: 100%;
     text-align: center;
 }
 
@@ -206,24 +209,81 @@ footer {
     border-radius: 12px;
     font-size: 16px;
     margin-top: 4px;
+    font-family: 'Poppins', Arial, sans-serif;
 }
 
-/* --- Mapa (dentro de la app) --- */
-#mapaApp {
-    height: 350px;
-    width: 100%;
-    border-radius: 16px;
-    border: 1px solid #e0edec;
-    margin: 12px 0;
+/* ====================================
+   ETIQUETAS DE ESTADO (Alertas)
+   ==================================== */
+.estado-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.estado-reportado {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.estado-en_revision {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.estado-en_proceso {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.estado-solucionado {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* --- Tarjeta de reporte en Alertas --- */
+.tarjeta-reporte {
+    background: #f8fcfb;
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+    text-align: left;
+    border-left: 5px solid #2c7a7b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.tarjeta-reporte strong {
+    color: #1a4d4e;
+    font-size: 16px;
+}
+
+.tarjeta-reporte .fila-info {
+    font-size: 14px;
+    color: #4a6b6c;
+    margin-top: 6px;
+}
+
+.tarjeta-reporte .fecha {
+    font-size: 12px;
+    color: #8ba5a6;
+    margin-top: 8px;
+    display: block;
 }
 
 /* --- Responsive --- */
 @media (max-width: 500px) {
     .logo-header {
-        max-height: 50px;
+        max-height: 75px;
+    }
+    .slogan-header {
+        font-size: 16px;
     }
     #contenido h2 {
-        font-size: 24px;
+        font-size: 22px;
     }
     nav button {
         font-size: 12px;

@@ -1,5 +1,5 @@
 // ========================================
-// NAVEGACIÓN COMPLETA ECOALERTA (SIN MAPA)
+// NAVEGACIÓN COMPLETA ECOALERTA
 // ========================================
 
 // ========================================
@@ -201,16 +201,25 @@ function mostrarSeccion(seccion) {
     else if (seccion === "alertas") {
         contenido.innerHTML = `
             <h2>🚨 Alertas</h2>
+            <p>Aquí puedes ver el estado de tus reportes.</p>
             <div id="alertas-container">
                 <p>Cargando tus reportes...</p>
             </div>
+            <button onclick="mostrarSeccion('inicio')" style="margin-top:16px;">Volver al inicio</button>
         `;
         cargarAlertasUsuario();
     }
     else if (seccion === "jugar") {
         contenido.innerHTML = `
-            <h2>🎮 Jugar</h2>
-            <p>Aquí integraremos tu juego educativo sobre el río.</p>
+            <h2>🎮 Rescate Río Tunjuelito</h2>
+            <p>¡Ayuda a nuestro explorador a limpiar el río!</p>
+            <div style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 16px; margin: 16px 0;">
+                <iframe
+                    src="https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+                    allowfullscreen
+                ></iframe>
+            </div>
             <button onclick="mostrarSeccion('inicio')">Volver al inicio</button>
         `;
     }
@@ -220,7 +229,7 @@ function mostrarSeccion(seccion) {
 }
 
 // ========================================
-// FUNCIÓN: Cargar alertas del usuario
+// FUNCIÓN: Cargar alertas del usuario (con etiquetas de estado)
 // ========================================
 async function cargarAlertasUsuario() {
     const container = document.getElementById("alertas-container");
@@ -251,25 +260,42 @@ async function cargarAlertasUsuario() {
             return;
         }
 
-        let html = `<h3>📋 Tus reportes</h3><ul style="list-style:none; padding:0;">`;
+        // Nombres bonitos para los estados
+        const nombresEstados = {
+            "reportado": "🔴 Reportado",
+            "en_revision": "🟡 En revisión",
+            "en_proceso": "🔵 En proceso",
+            "solucionado": "🟢 Solucionado"
+        };
+
+        let html = `<h3 style="text-align:left; margin-bottom:14px; color:#1a4d4e;">📋 Tus reportes (${reportes.length})</h3>`;
+
         for (let r of reportes) {
-            const estadoTexto = r.estado.replace("_", " ").toUpperCase();
-            let color = "#991b1b";
-            if (r.estado === "en_revision") color = "#854d0e";
-            else if (r.estado === "en_proceso") color = "#1e40af";
-            else if (r.estado === "solucionado") color = "#166534";
+            const estadoTexto = nombresEstados[r.estado] || r.estado.toUpperCase();
+            const claseEstado = `estado-${r.estado}`;
+            const fecha = new Date(r.fecha_reporte).toLocaleString("es-CO", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
 
             html += `
-                <li style="background: #f8fcfb; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid ${color};">
-                    <strong>${r.tipo}</strong><br>
-                    Ubicación: ${r.ubicacion || "N/A"}<br>
-                    Dirección: ${r.direccion || "No especificada"}<br>
-                    Estado: <span style="color:${color}; font-weight:bold;">${estadoTexto}</span><br>
-                    <small>${new Date(r.fecha_reporte).toLocaleString()}</small>
-                </li>
+                <div class="tarjeta-reporte">
+                    <strong>${r.tipo}</strong>
+                    <div class="fila-info">📍 <strong>Ubicación:</strong> ${r.ubicacion || "N/A"}</div>
+                    ${r.direccion ? `<div class="fila-info">🏠 <strong>Dirección:</strong> ${r.direccion}</div>` : ""}
+                    <div class="fila-info">⚠️ <strong>Gravedad:</strong> ${r.gravedad || "media"}</div>
+                    ${r.descripcion ? `<div class="fila-info">📝 ${r.descripcion}</div>` : ""}
+                    <div style="margin-top:10px;">
+                        <span class="estado-badge ${claseEstado}">${estadoTexto}</span>
+                    </div>
+                    <span class="fecha">🕐 ${fecha}</span>
+                </div>
             `;
         }
-        html += `</ul>`;
+
         container.innerHTML = html;
 
     } catch (err) {
@@ -286,7 +312,7 @@ function mostrarPerfil() {
     if (usuarioActual) {
         contenido.innerHTML = `
             <div class="perfil">
-                <div class="icono-perfil">👤</div>
+                <div class="icono-perfil" style="font-size:60px;">👤</div>
                 <h2>Mi perfil</h2>
                 <p><strong>Nombre:</strong> ${usuarioActual.user_metadata?.nombre || "Sin nombre"}</p>
                 <p><strong>Correo:</strong> ${usuarioActual.email}</p>
@@ -297,7 +323,7 @@ function mostrarPerfil() {
     } else {
         contenido.innerHTML = `
             <div class="perfil">
-                <div class="icono-perfil">👤</div>
+                <div class="icono-perfil" style="font-size:60px;">👤</div>
                 <h2>Mi perfil</h2>
                 <p>Aún no has iniciado sesión.</p>
                 <button onclick="mostrarRegistro()">Crear cuenta</button>
@@ -373,7 +399,6 @@ function mostrarRegistro() {
                 return;
             }
 
-            // Insertar en la tabla 'usuarios'
             const { error: insertError } = await supabase
                 .from("usuarios")
                 .insert([

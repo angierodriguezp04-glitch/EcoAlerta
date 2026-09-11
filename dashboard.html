@@ -10,64 +10,58 @@
 <body>
 
 <header>
-    <h1 style="font-size: 28px; color: #1a4d4e; margin-bottom: 0;">🌊 EcoAlerta</h1>
+    <h1 style="font-size: 28px; color: #1a4d4e; margin-bottom: 0;"> EcoAlerta</h1>
     <p class="slogan-header">Panel de control — Monitoreo y gestión</p>
 </header>
 
 <main>
-    <!-- Estadísticas -->
+    <!-- ===== ESTADÍSTICAS ===== -->
     <section class="estadisticas">
         <div class="tarjeta-estadistica">
-            <h3>📋 Total reportes</h3>
+            <h3>📋 Total de reportes</h3>
             <p id="total-reportes">0</p>
+        </div>
+        <div class="tarjeta-estadistica">
+            <h3>🔴 Reportados</h3>
+            <p id="total-reportados">0</p>
+        </div>
+        <div class="tarjeta-estadistica">
+            <h3>🟡 En revisión</h3>
+            <p id="total-revision">0</p>
+        </div>
+        <div class="tarjeta-estadistica">
+            <h3>🔵 En proceso</h3>
+            <p id="total-proceso">0</p>
         </div>
         <div class="tarjeta-estadistica">
             <h3>🟢 Solucionados</h3>
             <p id="total-solucionados">0</p>
         </div>
-        <div class="tarjeta-estadistica">
-            <h3>🔴 Pendientes</h3>
-            <p id="total-pendientes">0</p>
-        </div>
-        <div class="tarjeta-estadistica">
-            <h3>📍 Puntos de monitoreo</h3>
-            <p id="total-puntos">1</p>
-        </div>
     </section>
 
-    <!-- Dos columnas: Sensor + Reportes -->
-    <div class="contenedor-doble">
-        <!-- Columna izquierda: Sensor -->
-        <section class="columna-sensor">
-            <div id="contenedor-sensor">
+    <!-- ===== TABLA DE REPORTES ===== -->
+    <section class="seccion-reportes">
+        <h2>📋 Reportes ciudadanos</h2>
+        <div id="contenedor-tabla">
+            <table id="tabla-reportes">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Ubicación</th>
+                    <th>Dirección</th>
+                    <th>Tipo</th>
+                    <th>Gravedad</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+                </thead>
+                <tbody id="cuerpo-tabla">
                 <!-- Cargado por JavaScript -->
-            </div>
-        </section>
-
-        <!-- Columna derecha: Reportes -->
-        <section class="columna-reportes">
-            <h2>📋 Reportes ciudadanos</h2>
-            <div id="contenedor-tabla">
-                <table id="tabla-reportes">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Usuario</th>
-                        <th>Ubicación</th>
-                        <th>Dirección</th>
-                        <th>Tipo</th>
-                        <th>Gravedad</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
-                    </tr>
-                    </thead>
-                    <tbody id="cuerpo-tabla">
-                    <!-- Cargado por JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </div>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </main>
 
 <footer>
@@ -75,7 +69,6 @@
     <p>Angie Rodríguez</p>
 </footer>
 
-<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/dashboard.js"></script>
