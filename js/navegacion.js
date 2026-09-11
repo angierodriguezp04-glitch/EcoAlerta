@@ -210,18 +210,18 @@ function mostrarSeccion(seccion) {
         cargarAlertasUsuario();
     }
     else if (seccion === "jugar") {
-        contenido.innerHTML = `
-            <h2>🎮 Rescate Río Tunjuelito</h2>
-            <p>¡Ayuda a nuestro explorador a limpiar el río!</p>
-            <div style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 16px; margin: 16px 0;">
-                <iframe
-                    src="https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/"
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-                    allowfullscreen
-                ></iframe>
-            </div>
-            <button onclick="mostrarSeccion('inicio')">Volver al inicio</button>
-        `;
+      contenido.innerHTML = `
+          <h2>🎮 Rescate Río Tunjuelito</h2>
+          <p>¡Ayuda a nuestro explorador a limpiar el río!</p>
+          <div style="width: 100%; height: 80vh; border-radius: 16px; overflow: hidden; margin: 16px 0; box-shadow: 0 4px 14px rgba(0,0,0,0.08);">
+              <iframe
+                  src="https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/"
+                  style="width: 100%; height: 100%; border: none;"
+                  allowfullscreen
+              ></iframe>
+          </div>
+          <button onclick="mostrarSeccion('inicio')">Volver al inicio</button>
+      `;
     }
     else if (seccion === "perfil") {
         mostrarPerfil();
