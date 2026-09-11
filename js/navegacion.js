@@ -209,20 +209,35 @@ function mostrarSeccion(seccion) {
         `;
         cargarAlertasUsuario();
     }
-    else if (seccion === "jugar") {
-      contenido.innerHTML = `
-          <h2>🎮 Rescate Río Tunjuelito</h2>
-          <p>¡Ayuda a nuestro explorador a limpiar el río!</p>
-          <div style="width: 100%; height: 80vh; border-radius: 16px; overflow: hidden; margin: 16px 0; box-shadow: 0 4px 14px rgba(0,0,0,0.08);">
-              <iframe
-                  src="https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/"
-                  style="width: 100%; height: 100%; border: none;"
-                  allowfullscreen
-              ></iframe>
-          </div>
-          <button onclick="mostrarSeccion('inicio')">Volver al inicio</button>
-      `;
-    }
+else if (seccion === "jugar") {
+    // Ampliar el contenedor solo para el juego
+    contenido.style.maxWidth = "1100px";
+
+    contenido.innerHTML = `
+        <h2>🎮 Rescate Río Tunjuelito</h2>
+        <p>¡Ayuda a nuestro explorador a limpiar el río!</p>
+
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:14px;">
+            <button onclick="abrirJuegoPantallaCompleta()" style="background:#1a4d4e; color:white;">
+                🖥️ Pantalla completa
+            </button>
+            <button onclick="window.open('https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/', '_blank')">
+                🔗 Abrir en pestaña nueva
+            </button>
+        </div>
+
+        <div id="contenedorJuego" style="width: 100%; height: 85vh; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.08); background:#000;">
+            <iframe
+                id="iframeJuego"
+                src="https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/"
+                style="width: 100%; height: 100%; border: none;"
+                allowfullscreen
+            ></iframe>
+        </div>
+
+        <button onclick="mostrarSeccion('inicio')" style="margin-top:14px;">Volver al inicio</button>
+    `;
+}
     else if (seccion === "perfil") {
         mostrarPerfil();
     }
