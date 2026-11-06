@@ -17,7 +17,7 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding-bottom: 90px;
+    padding-bottom: 120px;
 }
 
 /* --- Encabezado --- */
@@ -27,14 +27,14 @@ header {
 }
 
 .logo-header {
-    max-height: 95px;      /* <-- ANTES ERA 70px (más grande) */
+    max-height: 95px;
     width: auto;
     display: block;
     margin: 0 auto 8px auto;
 }
 
 .slogan-header {
-    font-size: 19px;       /* <-- ANTES ERA 16px (más grande) */
+    font-size: 19px;
     color: #2c7a7b;
     font-weight: 600;
     letter-spacing: 1px;
@@ -91,6 +91,16 @@ header {
     min-height: 80px;
 }
 
+#formReporte input[type="file"] {
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px;
+    border: 1px dashed #cde0de;
+    border-radius: 12px;
+    background: #f9fcfb;
+    font-size: 14px;
+}
+
 #formReporte button[type="submit"] {
     width: 100%;
     margin-top: 20px;
@@ -107,6 +117,11 @@ header {
 
 #formReporte button[type="submit"]:hover {
     background: #0f3a3b;
+}
+
+#formReporte button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: wait;
 }
 
 /* --- Botones generales --- */
@@ -127,35 +142,73 @@ button:hover {
     background: #d1e9e6;
 }
 
-/* --- Navegación inferior --- */
+/* ====================================
+   MENÚ INFERIOR (flotante, icono arriba)
+   ==================================== */
 nav {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 520px;
     display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 10px 0;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 4px;
+    padding: 8px;
     background: white;
-    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.06);
+    border-radius: 28px;
+    box-shadow: 0 8px 28px rgba(26, 77, 78, 0.18);
     z-index: 10;
 }
 
 nav button {
-    background: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px;
+    background: transparent;
     border: none;
-    padding: 8px 6px;
-    font-size: 14px;
-    cursor: pointer;
-    font-family: 'Poppins', Arial, sans-serif;
-    color: #2c5a5b;
+    border-radius: 20px;
+    color: #5f7f80;
     font-weight: 500;
-    transition: color 0.2s;
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s, transform 0.2s;
+}
+
+nav button .nav-icono {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform 0.25s;
+}
+
+nav button .nav-texto {
+    font-size: 11px;
+    line-height: 1.2;
+    letter-spacing: 0.2px;
 }
 
 nav button:hover {
-    color: #0f3a3b;
+    background: #eef7f6;
+    color: #1a4d4e;
+}
+
+nav button.activo {
+    background: #1a4d4e;
+    color: white;
+    box-shadow: 0 4px 12px rgba(26, 77, 78, 0.35);
+}
+
+nav button.activo .nav-icono {
+    transform: translateY(-2px) scale(1.15);
+}
+
+nav button.activo .nav-texto {
+    font-weight: 700;
 }
 
 /* --- Pie de página --- */
@@ -285,8 +338,16 @@ footer {
     #contenido h2 {
         font-size: 22px;
     }
-    nav button {
-        font-size: 12px;
-        padding: 6px 4px;
+    nav {
+        bottom: 8px;
+        width: calc(100% - 16px);
+        padding: 6px;
+        border-radius: 24px;
+    }
+    nav button .nav-icono {
+        font-size: 20px;
+    }
+    nav button .nav-texto {
+        font-size: 10px;
     }
 }

@@ -13,6 +13,7 @@
 
     <!-- Nuestros estilos -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="sensor.css">
 </head>
 <body>
 
@@ -31,11 +32,26 @@
 
 <!-- ===== MENÚ DE NAVEGACIÓN ===== -->
 <nav>
-    <button onclick="mostrarSeccion('inicio')">🏠 Inicio</button>
-    <button onclick="mostrarSeccion('reportar')">📋 Reportar</button>
-    <button onclick="mostrarSeccion('alertas')">🚨 Alertas</button>
-    <button onclick="mostrarSeccion('jugar')">🎮 Jugar</button>
-    <button onclick="mostrarSeccion('perfil')">👤 Perfil</button>
+    <button data-seccion="inicio" class="activo" onclick="mostrarSeccion('inicio')">
+        <span class="nav-icono">🏠</span>
+        <span class="nav-texto">Inicio</span>
+    </button>
+    <button data-seccion="reportar" onclick="mostrarSeccion('reportar')">
+        <span class="nav-icono">📋</span>
+        <span class="nav-texto">Reportar</span>
+    </button>
+    <button data-seccion="alertas" onclick="mostrarSeccion('alertas')">
+        <span class="nav-icono">🚨</span>
+        <span class="nav-texto">Alertas</span>
+    </button>
+    <button data-seccion="jugar" onclick="mostrarSeccion('jugar')">
+        <span class="nav-icono">🎮</span>
+        <span class="nav-texto">Jugar</span>
+    </button>
+    <button data-seccion="perfil" onclick="mostrarSeccion('perfil')">
+        <span class="nav-icono">👤</span>
+        <span class="nav-texto">Perfil</span>
+    </button>
 </nav>
 
 <!-- ===== PIE DE PÁGINA ===== -->

@@ -6,85 +6,49 @@
     <title>EcoAlerta - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="dashboard.css">
-
+    <link rel="stylesheet" href="sensor.css">
     <style>
-        /* ===== Diseño: reportes a la izquierda, sensor a la derecha ===== */
-        .panel-principal {
+        /* ===== MENÚ DE ENTRADA (dos opciones) ===== */
+        .menu-opciones {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 260px;
-            width: 100%;
-            gap: 20px;
-            align-items: start;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            max-width: 800px;
+            margin: 40px auto;
         }
-
-        .panel-sensor {
-            position: sticky;
-            top: 20px;
-        }
-
-        .tarjeta-sensor {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 22px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-            border-top: 5px solid #1e40af;
+        .opcion-card {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 40px 24px;
             text-align: center;
-            transition: border-color 0.3s, background 0.3s;
+            cursor: pointer;
+            font-family: 'Poppins', Arial, sans-serif;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+            border-top: 5px solid #2c7a7b;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-
-        .tarjeta-sensor.en-peligro {
-            border-top-color: #991b1b;
-            background: #fff7f7;
+        .opcion-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
         }
+        .opcion-icono { font-size: 56px; display: block; margin-bottom: 14px; }
+        .opcion-titulo { font-size: 22px; font-weight: 700; color: #1a4d4e; display: block; }
+        .opcion-desc { font-size: 14px; color: #4a6b6c; margin-top: 8px; display: block; }
 
-        .tarjeta-sensor h3 {
-            margin: 0 0 14px 0;
-            font-size: 15px;
+        .btn-volver {
+            background: white;
+            border: 1.5px solid #cde0de;
             color: #1a4d4e;
+            padding: 8px 18px;
+            border-radius: 12px;
+            font-family: 'Poppins', Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 18px;
         }
-
-        .sensor-badge {
-            display: inline-block;
-            padding: 5px 16px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
-            background: #e5e7eb;
-            color: #374151;
-        }
-        .sensor-badge.normal  { background: #dcfce7; color: #166534; }
-        .sensor-badge.peligro { background: #fee2e2; color: #991b1b; }
-
-        .sensor-etiqueta {
-            display: block;
-            margin-top: 18px;
-            font-size: 12px;
-            color: #6f8f90;
-        }
-
-        .sensor-valor {
-            font-size: 52px;
-            font-weight: 700;
-            margin: 2px 0 0 0;
-            color: #1a4d4e;
-            line-height: 1.1;
-        }
-
-        .sensor-fecha {
-            display: block;
-            margin-top: 12px;
-            font-size: 12px;
-            color: #6f8f90;
-        }
-
-        /* La tabla se desplaza horizontalmente si no cabe */
-        #contenedor-tabla { overflow-x: auto; }
-
-        /* Solo en pantallas pequeñas (celular) el sensor pasa arriba de la tabla */
-        @media (max-width: 760px) {
-            .panel-principal { grid-template-columns: 1fr; }
-            .panel-sensor { position: static; order: -1; }
-        }
+        .btn-volver:hover { background: #e6f4f2; }
     </style>
 </head>
 <body>
@@ -95,34 +59,81 @@
 </header>
 
 <main>
-    <!-- ===== ESTADÍSTICAS ===== -->
-    <section class="estadisticas">
-        <div class="tarjeta-estadistica">
-            <h3>📋 Total de reportes</h3>
-            <p id="total-reportes">0</p>
-        </div>
-        <div class="tarjeta-estadistica">
-            <h3>🔴 Reportados</h3>
-            <p id="total-reportados">0</p>
-        </div>
-        <div class="tarjeta-estadistica">
-            <h3>🟡 En revisión</h3>
-            <p id="total-revision">0</p>
-        </div>
-        <div class="tarjeta-estadistica">
-            <h3>🔵 En proceso</h3>
-            <p id="total-proceso">0</p>
-        </div>
-        <div class="tarjeta-estadistica">
-            <h3>🟢 Solucionados</h3>
-            <p id="total-solucionados">0</p>
+
+    <!-- ===== MENÚ PRINCIPAL ===== -->
+    <section id="menu-principal">
+        <div class="menu-opciones">
+            <button class="opcion-card" onclick="mostrarVista('sensor')">
+                <span class="opcion-icono">📡</span>
+                <span class="opcion-titulo">Sensor de nivel del río</span>
+                <span class="opcion-desc">Nivel en tiempo real y últimas lecturas</span>
+            </button>
+            <button class="opcion-card" onclick="mostrarVista('reportes')">
+                <span class="opcion-icono">📋</span>
+                <span class="opcion-titulo">Reportes ciudadanos</span>
+                <span class="opcion-desc">Estadísticas, historial y gestión de estados</span>
+            </button>
         </div>
     </section>
 
-    <div class="panel-principal">
+    <!-- ===== VISTA: SENSOR ===== -->
+    <section id="vista-sensor" style="display:none;">
+        <button class="btn-volver" onclick="mostrarVista('menu')">← Volver</button>
 
-        <!-- ===== TABLA DE REPORTES (izquierda) ===== -->
-        <section class="seccion-reportes">
+        <div class="seccion-reportes" id="panel-sensor">
+            <h2>📡 Sensor de nivel del río</h2>
+            <div id="sensor-container"><p>Cargando sensor...</p></div>
+
+            <h3 style="font-size:16px; margin:18px 0 10px 0;">Últimas lecturas</h3>
+            <div id="contenedor-lecturas" style="overflow-x:auto; max-height:260px; overflow-y:auto;">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Fecha y hora</th>
+                        <th>Sensor</th>
+                        <th>Valor crudo</th>
+                        <th>Nivel</th>
+                        <th>Estado</th>
+                    </tr>
+                    </thead>
+                    <tbody id="cuerpo-lecturas">
+                    <tr><td colspan="5" style="text-align:center; color:#6f8f90;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== VISTA: REPORTES ===== -->
+    <section id="vista-reportes" style="display:none;">
+        <button class="btn-volver" onclick="mostrarVista('menu')">← Volver</button>
+
+        <!-- Estadísticas -->
+        <div class="estadisticas">
+            <div class="tarjeta-estadistica">
+                <h3>📋 Total de reportes</h3>
+                <p id="total-reportes">0</p>
+            </div>
+            <div class="tarjeta-estadistica">
+                <h3>🔴 Reportados</h3>
+                <p id="total-reportados">0</p>
+            </div>
+            <div class="tarjeta-estadistica">
+                <h3>🟡 En revisión</h3>
+                <p id="total-revision">0</p>
+            </div>
+            <div class="tarjeta-estadistica">
+                <h3>🔵 En proceso</h3>
+                <p id="total-proceso">0</p>
+            </div>
+            <div class="tarjeta-estadistica">
+                <h3>🟢 Solucionados</h3>
+                <p id="total-solucionados">0</p>
+            </div>
+        </div>
+
+        <!-- Tabla de reportes -->
+        <div class="seccion-reportes">
             <h2>📋 Reportes ciudadanos</h2>
             <div id="contenedor-tabla">
                 <table id="tabla-reportes">
@@ -133,6 +144,7 @@
                         <th>Ubicación</th>
                         <th>Dirección</th>
                         <th>Tipo</th>
+                        <th>Descripción</th>
                         <th>Evidencia</th>
                         <th>Gravedad</th>
                         <th>Estado</th>
@@ -144,22 +156,9 @@
                     </tbody>
                 </table>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- ===== SENSOR (derecha) ===== -->
-        <aside class="panel-sensor">
-            <div class="tarjeta-sensor" id="tarjeta-sensor">
-                <h3>📡 Sensor en tiempo real</h3>
-                <span id="sensor-estado-badge" class="sensor-badge">Esperando datos...</span>
-
-                <span class="sensor-etiqueta">Último nivel (ADC)</span>
-                <p id="sensor-valor" class="sensor-valor">--</p>
-
-                <span id="sensor-fecha" class="sensor-fecha">Sin mediciones recientes</span>
-            </div>
-        </aside>
-
-    </div>
 </main>
 
 <footer>
