@@ -1,5 +1,176 @@
 // ========================================
-// DASHBOARD ECOALERTA - Versión Final
+// SENSOR DE NIVEL DEL RÍO (incrustado: no requiere sensor.js)
+// ========================================
+(function () {
+    if (typeof window.suscribirLecturas === "function" &&
+        typeof window.renderTarjetaSensor === "function") {
+        return; // ya cargado desde sensor.js
+    }
+
+    const SENSOR_CONFIG = {
+        tabla: "lecturas_sensor",
+        umbrales: { precaucion: 25, alerta: 50, critico: 75 }, // % del nivel
+        segundosOffline: 90,
+        pollingMs: 10000,
+        historial: 30
+    };
+
+    const NIVELES = {
+        normal:     { texto: "Normal",         emoji: "🟢", mensaje: "El nivel del río es normal." },
+        precaucion: { texto: "Precaución",     emoji: "🟡", mensaje: "El nivel del río está subiendo. Mantente atento." },
+        alerta:     { texto: "Alerta",         emoji: "🟠", mensaje: "Nivel alto. Evita acercarte al río y a zonas bajas." },
+        critico:    { texto: "Riesgo crítico", emoji: "🔴", mensaje: "¡Riesgo de inundación! Aléjate de la ronda del río y sigue las indicaciones de las autoridades." },
+        offline:    { texto: "Sin conexión",   emoji: "⚪", mensaje: "El sensor no está enviando datos en este momento." }
+    };
+
+    function escapeHtml(texto) {
+        return String(texto ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function clasificarNivel(porcentaje) {
+        const u = SENSOR_CONFIG.umbrales;
+        if (porcentaje >= u.critico) return "critico";
+        if (porcentaje >= u.alerta) return "alerta";
+        if (porcentaje >= u.precaucion) return "precaucion";
+        return "normal";
+    }
+
+    function estadoDeLectura(lectura) {
+        if (!lectura) return "offline";
+        const edad = (Date.now() - new Date(lectura.created_at).getTime()) / 1000;
+        if (edad > SENSOR_CONFIG.segundosOffline) return "offline";
+        return clasificarNivel(Number(lectura.nivel_porcentaje));
+    }
+
+    function tiempoRelativo(iso) {
+        const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+        if (s < 60) return `hace ${s} s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `hace ${m} min`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `hace ${h} h`;
+        return `hace ${Math.floor(h / 24)} d`;
+    }
+
+    async function obtenerLecturas(n) {
+        const { data, error } = await window.supabase
+            .from(SENSOR_CONFIG.tabla)
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(n);
+        if (error) throw error;
+        return data || [];
+    }
+
+    function suscribirLecturas(callback) {
+        let activo = true;
+        let debounce = null;
+
+        const refrescar = async () => {
+            if (!activo) return;
+            try {
+                const lecturas = await obtenerLecturas(SENSOR_CONFIG.historial);
+                if (activo) callback(lecturas, null);
+            } catch (e) {
+                console.error("Error leyendo sensor:", e);
+                if (activo) callback(null, e);
+            }
+        };
+
+        refrescar();
+        const poll = setInterval(refrescar, SENSOR_CONFIG.pollingMs);
+
+        let canal = null;
+        try {
+            canal = window.supabase
+                .channel("lecturas-" + Math.random().toString(36).slice(2))
+                .on("postgres_changes",
+                    { event: "INSERT", schema: "public", table: SENSOR_CONFIG.tabla },
+                    () => {
+                        clearTimeout(debounce);
+                        debounce = setTimeout(refrescar, 500);
+                    })
+                .subscribe();
+        } catch (e) {
+            console.warn("Realtime no disponible, se usa solo polling:", e);
+        }
+
+        return function detener() {
+            activo = false;
+            clearInterval(poll);
+            clearTimeout(debounce);
+            if (canal) window.supabase.removeChannel(canal);
+        };
+    }
+
+    function renderSparkline(lecturasDesc) {
+        if (!lecturasDesc || lecturasDesc.length < 2) return "";
+        const datos = [...lecturasDesc].reverse().map(l => Number(l.nivel_porcentaje));
+        const W = 300, H = 60, pad = 4;
+        const paso = (W - pad * 2) / (datos.length - 1);
+        const puntos = datos.map((v, i) => {
+            const x = pad + i * paso;
+            const y = H - pad - (v / 100) * (H - pad * 2);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        return `<svg class="sensor-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+                    <polyline points="${puntos}"></polyline>
+                </svg>`;
+    }
+
+    function renderTarjetaSensor(lecturasDesc, error, opciones) {
+    // opciones.sinMensaje = true -> oculta los avisos para ciudadanos (uso en dashboard)
+    opciones = opciones || {};
+        if (error) {
+            return `<div class="sensor-card nivel-offline">
+                        <div class="sensor-titulo">📡 Nivel del río en tiempo real</div>
+                        <div class="sensor-msg">❌ No se pudo consultar el sensor.</div>
+                    </div>`;
+        }
+
+        const ultima = lecturasDesc && lecturasDesc[0];
+        const estado = estadoDeLectura(ultima);
+        const info = NIVELES[estado];
+
+        if (!ultima) {
+            return `<div class="sensor-card nivel-offline">
+                        <div class="sensor-titulo">📡 Nivel del río en tiempo real</div>
+                        <span class="sensor-estado">${info.emoji} ${info.texto}</span>
+                        <div class="sensor-msg">Aún no hay datos del sensor.</div>
+                    </div>`;
+        }
+
+        const pct = Number(ultima.nivel_porcentaje);
+        return `
+            <div class="sensor-card nivel-${estado}">
+                <div class="sensor-titulo">📡 Nivel del río en tiempo real</div>
+                <span class="sensor-estado">${info.emoji} ${info.texto}</span>
+                <div class="sensor-pct">${pct.toFixed(0)}%</div>
+                <div class="sensor-barra"><div class="sensor-barra-relleno" style="width:${pct}%"></div></div>
+                ${(opciones.sinMensaje && estado !== "offline") ? "" : `<div class="sensor-msg">${info.mensaje}</div>`}
+                ${renderSparkline(lecturasDesc)}
+                <div class="sensor-meta">
+                    Última lectura ${tiempoRelativo(ultima.created_at)} · Sensor: ${escapeHtml(ultima.sensor_id)}
+                </div>
+            </div>`;
+    }
+
+    // Exponer a todo el resto del código
+    window.SENSOR_CONFIG = SENSOR_CONFIG;
+    window.NIVELES = NIVELES;
+    window.escapeHtml = escapeHtml;
+    window.clasificarNivel = clasificarNivel;
+    window.suscribirLecturas = suscribirLecturas;
+    window.renderTarjetaSensor = renderTarjetaSensor;
+
+    console.log("✅ Sensor incrustado cargado correctamente.");
+})();
+
+// ========================================
+// DASHBOARD ECOALERTA - con sensor en tiempo real
+// (los reportes cargan primero y NO dependen del sensor)
 // ========================================
 
 document.addEventListener("DOMContentLoaded", async function () {
@@ -10,9 +181,67 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
     console.log("✅ Dashboard conectado a Supabase");
 
+    // 1. Reportes y estadísticas primero
     await cargarReportes();
     await cargarEstadisticas();
+
+    // 2. Sensor después, protegido para que nunca rompa lo anterior
+    try {
+        iniciarPanelSensor();
+    } catch (e) {
+        console.error("Error iniciando el sensor:", e);
+        const c = document.getElementById("sensor-container");
+        if (c) c.innerHTML = `<p style="color:red;">❌ Sensor no disponible (revisa que js/sensor.js exista y esté en dashboard.html).</p>`;
+    }
 });
+
+// ========================================
+// 0. SENSOR EN TIEMPO REAL
+// ========================================
+function iniciarPanelSensor() {
+    if (typeof suscribirLecturas !== "function" || typeof renderTarjetaSensor !== "function") {
+        const c = document.getElementById("sensor-container");
+        if (c) c.innerHTML = `<p style="color:red;">❌ Sensor no disponible: no se cargó js/sensor.js.</p>`;
+        const t = document.getElementById("cuerpo-lecturas");
+        if (t) t.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#6f8f90;">Sin datos.</td></tr>`;
+        console.error("sensor.js no está cargado: faltan suscribirLecturas / renderTarjetaSensor.");
+        return;
+    }
+
+    suscribirLecturas(function (lecturas, error) {
+        // Tarjeta principal
+        const c = document.getElementById("sensor-container");
+        if (c) c.innerHTML = renderTarjetaSensor(lecturas, error, { sinMensaje: true });
+
+        // Tabla de últimas lecturas
+        const tbody = document.getElementById("cuerpo-lecturas");
+        if (!tbody) return;
+
+        if (error || !lecturas || lecturas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#6f8f90;">Sin lecturas aún.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        for (let l of lecturas.slice(0, 15)) {
+            const nivel = clasificarNivel(Number(l.nivel_porcentaje));
+            const info = NIVELES[nivel];
+            const fecha = new Date(l.created_at).toLocaleString("es-CO", {
+                day: "2-digit", month: "short",
+                hour: "2-digit", minute: "2-digit", second: "2-digit"
+            });
+            html += `
+                <tr>
+                    <td>${fecha}</td>
+                    <td>${escapeHtml(l.sensor_id)}</td>
+                    <td>${l.nivel_raw}</td>
+                    <td><strong>${Number(l.nivel_porcentaje).toFixed(1)}%</strong></td>
+                    <td>${info.emoji} ${info.texto}</td>
+                </tr>`;
+        }
+        tbody.innerHTML = html;
+    });
+}
 
 // ========================================
 // 1. CARGAR REPORTES (con nombre de usuario y evidencia)
@@ -27,17 +256,20 @@ async function cargarReportes() {
                 descripcion,
                 ubicacion,
                 direccion,
-                foto_url,
                 gravedad,
                 estado,
                 fecha_reporte,
                 usuario_id,
+                evidencia_url,
+                evidencia_tipo,
                 usuarios ( nombre, correo )
             `)
             .order("fecha_reporte", { ascending: false });
 
         if (error) {
             console.error("Error al cargar reportes:", error);
+            const tb = document.getElementById("cuerpo-tabla");
+            if (tb) tb.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:#991b1b;">❌ Error al cargar reportes: ${error.message}</td></tr>`;
             return;
         }
 
@@ -45,7 +277,7 @@ async function cargarReportes() {
         tbody.innerHTML = "";
 
         if (!reportes || reportes.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#6f8f90;">No hay reportes aún.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:#6f8f90;">No hay reportes aún.</td></tr>`;
             return;
         }
 
@@ -54,11 +286,11 @@ async function cargarReportes() {
 
             // ---- ID (corto) ----
             const tdId = document.createElement("td");
-            tdId.textContent = reporte.id.slice(0, 8) + "…";
+            tdId.textContent = String(reporte.id).slice(0, 8) + "…";
             tdId.style.fontSize = "12px";
             tdId.style.color = "#4a6b6c";
 
-            // ---- Usuario (nombre real) ----
+            // ---- Usuario ----
             const tdUsuario = document.createElement("td");
             tdUsuario.textContent = reporte.usuarios?.nombre || "Anónimo";
             tdUsuario.style.fontWeight = "500";
@@ -77,35 +309,30 @@ async function cargarReportes() {
             const tdTipo = document.createElement("td");
             tdTipo.textContent = reporte.tipo || "N/A";
 
-            // ---- Evidencia (foto o video) ----
-            const tdEvidencia = document.createElement("td");
-            if (reporte.foto_url) {
-                const esVideo = /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(reporte.foto_url);
+            // ---- Descripción ----
+            const tdDescripcion = document.createElement("td");
+            tdDescripcion.textContent = reporte.descripcion || "Sin descripción";
+            tdDescripcion.style.minWidth = "180px";
+            tdDescripcion.style.maxWidth = "260px";
+            tdDescripcion.style.wordBreak = "break-word";
+            if (!reporte.descripcion) {
+                tdDescripcion.style.color = "#8ba5a6";
+                tdDescripcion.style.fontStyle = "italic";
+            }
 
+            // ---- Evidencia ----
+            const tdEvidencia = document.createElement("td");
+            if (reporte.evidencia_url) {
                 const enlace = document.createElement("a");
-                enlace.href = reporte.foto_url;
+                enlace.href = reporte.evidencia_url;
                 enlace.target = "_blank";
                 enlace.rel = "noopener noreferrer";
-
-                if (esVideo) {
-                    enlace.textContent = "🎥 Ver video";
-                    enlace.style.color = "#1a4d4e";
-                    enlace.style.fontWeight = "600";
-                } else {
-                    const img = document.createElement("img");
-                    img.src = reporte.foto_url;
-                    img.alt = "Evidencia";
-                    img.style.width = "70px";
-                    img.style.height = "70px";
-                    img.style.objectFit = "cover";
-                    img.style.borderRadius = "8px";
-                    img.style.display = "block";
-                    enlace.appendChild(img);
-                }
+                enlace.textContent = reporte.evidencia_tipo === "video" ? "🎥 Ver video" : "🖼️ Ver foto";
+                enlace.style.color = "#2c7a7b";
+                enlace.style.fontWeight = "600";
                 tdEvidencia.appendChild(enlace);
             } else {
                 tdEvidencia.textContent = "—";
-                tdEvidencia.style.color = "#9bb3b4";
             }
 
             // ---- Gravedad ----
@@ -146,10 +373,9 @@ async function cargarReportes() {
                 select.appendChild(opt);
             }
 
-            // ===== EVENTO CAMBIO DE ESTADO =====
             select.addEventListener("change", async function () {
                 const nuevoEstado = this.value;
-                const estadoAnterior = reporte.estado;
+                const estadoAnterior = reporte.estado || "reportado";
                 const reporteId = reporte.id;
                 const selectRef = this;
 
@@ -161,7 +387,7 @@ async function cargarReportes() {
                 selectRef.disabled = true;
 
                 try {
-                    const { data, error } = await window.supabase
+                    const { error } = await window.supabase
                         .from("reportes")
                         .update({ estado: nuevoEstado })
                         .eq("id", reporteId)
@@ -174,16 +400,11 @@ async function cargarReportes() {
                         return;
                     }
 
-                    // Actualizar la etiqueta de estado en la misma fila
                     spanEstado.textContent = nuevoEstado.replace("_", " ").toUpperCase();
                     spanEstado.className = `estado-${nuevoEstado}`;
-
-                    // Actualizar la variable local (para que el próximo cambio use el nuevo estado como "anterior")
                     reporte.estado = nuevoEstado;
 
-                    // Refrescar estadísticas de arriba
                     await cargarEstadisticas();
-
                     alert("✅ Estado actualizado correctamente.");
 
                 } catch (err) {
@@ -197,13 +418,13 @@ async function cargarReportes() {
 
             tdAccion.appendChild(select);
 
-            // ---- Armar la fila ----
             tr.appendChild(tdId);
             tr.appendChild(tdUsuario);
             tr.appendChild(tdUbicacion);
             tr.appendChild(tdDireccion);
             tr.appendChild(tdTipo);
-            tr.appendChild(tdEvidencia);   // <-- NUEVO
+            tr.appendChild(tdDescripcion);
+            tr.appendChild(tdEvidencia);
             tr.appendChild(tdGravedad);
             tr.appendChild(tdEstado);
             tr.appendChild(tdAccion);
@@ -244,100 +465,17 @@ async function cargarEstadisticas() {
     }
 }
 
+
 // ========================================
-// 3. PANEL DEL SENSOR
+// 3. NAVEGACIÓN ENTRE VISTAS (Sensor / Reportes)
 // ========================================
-const SENSOR_ID_SIMULADO = "8df5beb8-77c1-4c23-a165-7279ffce95ab";
-const UMBRAL_PELIGRO = 2000;   // Debe coincidir con el umbral del ESP32 y de navegacion.js
-const SIMULADOR_ACTIVO = true; // Ponlo en false cuando uses el ESP32 real
+function mostrarVista(nombre) {
+    const menu = document.getElementById("menu-principal");
+    const vSensor = document.getElementById("vista-sensor");
+    const vReportes = document.getElementById("vista-reportes");
 
-async function actualizarPanelSensor() {
-    const { data, error } = await window.supabase
-        .from("mediciones")
-        .select("nivel_agua, fecha")
-        .order("fecha", { ascending: false })
-        .limit(1);
-
-    if (error) {
-        console.error("Error al leer el sensor:", error);
-        return;
-    }
-    if (!data || data.length === 0) return;
-
-    const ultimo = data[0];
-    const valor = Number(ultimo.nivel_agua);
-    const fecha = new Date(ultimo.fecha).toLocaleTimeString("es-CO");
-
-    document.getElementById("sensor-valor").textContent = valor;
-    document.getElementById("sensor-fecha").textContent = "Actualizado: " + fecha;
-
-    const badge = document.getElementById("sensor-estado-badge");
-    const tarjeta = document.getElementById("tarjeta-sensor");
-
-    if (valor >= UMBRAL_PELIGRO) {
-        badge.textContent = "🚨 PELIGRO";
-        badge.className = "sensor-badge peligro";
-        tarjeta.classList.add("en-peligro");
-    } else {
-        badge.textContent = "✅ NORMAL";
-        badge.className = "sensor-badge normal";
-        tarjeta.classList.remove("en-peligro");
-    }
+    menu.style.display = nombre === "menu" ? "" : "none";
+    vSensor.style.display = nombre === "sensor" ? "" : "none";
+    vReportes.style.display = nombre === "reportes" ? "" : "none";
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
-
-// Actualiza el panel cuando llegue cualquier medición nueva (simulador o ESP32 real)
-function escucharSensorDashboard() {
-    window.supabase
-        .channel("dashboard-mediciones")
-        .on(
-            "postgres_changes",
-            { event: "INSERT", schema: "public", table: "mediciones" },
-            () => actualizarPanelSensor()
-        )
-        .subscribe();
-}
-
-// ========================================
-// 4. SIMULADOR DEL SENSOR (solo pruebas / video)
-// ========================================
-function iniciarSimulacion() {
-    console.log("🟢 Simulador de sensor iniciado...");
-    let fallos = 0;
-
-    const intervalo = setInterval(async () => {
-        const valorFalso = Math.floor(Math.random() * (3500 - 500 + 1)) + 500;
-
-        try {
-            const { error } = await window.supabase
-                .from("mediciones")
-                .insert([{ sensor_id: SENSOR_ID_SIMULADO, nivel_agua: valorFalso }]);
-
-            if (!error) {
-                fallos = 0;
-                console.log(`📡 Dato falso enviado a Supabase: ${valorFalso} ADC`);
-                actualizarPanelSensor();
-            } else {
-                fallos++;
-                console.error("Error al insertar:", error.message || error);
-                if (fallos >= 3) {
-                    clearInterval(intervalo);
-                    console.error("⛔ Simulador detenido tras 3 errores seguidos. Revisa las políticas RLS de 'mediciones'.");
-                }
-            }
-        } catch (err) {
-            console.log("Error en simulador:", err);
-        }
-    }, 15000); // Cada 15 segundos
-}
-
-// Iniciar (un solo DOMContentLoaded para el sensor)
-document.addEventListener("DOMContentLoaded", () => {
-    if (typeof window.supabase === "undefined" || typeof window.supabase.from !== "function") return;
-
-    actualizarPanelSensor();   // Cargar el último dato al abrir
-    escucharSensorDashboard(); // Escuchar nuevas mediciones
-
-    if (SIMULADOR_ACTIVO) {
-        setTimeout(iniciarSimulacion, 2000);
-    }
-});

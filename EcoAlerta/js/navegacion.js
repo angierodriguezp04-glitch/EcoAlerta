@@ -1,15 +1,185 @@
 // ========================================
+// SENSOR DE NIVEL DEL RÍO (incrustado: no requiere sensor.js)
+// ========================================
+(function () {
+    if (typeof window.suscribirLecturas === "function" &&
+        typeof window.renderTarjetaSensor === "function") {
+        return; // ya cargado desde sensor.js
+    }
+
+    const SENSOR_CONFIG = {
+        tabla: "lecturas_sensor",
+        umbrales: { precaucion: 25, alerta: 50, critico: 75 }, // % del nivel
+        segundosOffline: 90,
+        pollingMs: 10000,
+        historial: 30
+    };
+
+    const NIVELES = {
+        normal:     { texto: "Normal",         emoji: "🟢", mensaje: "El nivel del río es normal." },
+        precaucion: { texto: "Precaución",     emoji: "🟡", mensaje: "El nivel del río está subiendo. Mantente atento." },
+        alerta:     { texto: "Alerta",         emoji: "🟠", mensaje: "Nivel alto. Evita acercarte al río y a zonas bajas." },
+        critico:    { texto: "Riesgo crítico", emoji: "🔴", mensaje: "¡Riesgo de inundación! Aléjate de la ronda del río y sigue las indicaciones de las autoridades." },
+        offline:    { texto: "Sin conexión",   emoji: "⚪", mensaje: "El sensor no está enviando datos en este momento." }
+    };
+
+    function escapeHtml(texto) {
+        return String(texto ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function clasificarNivel(porcentaje) {
+        const u = SENSOR_CONFIG.umbrales;
+        if (porcentaje >= u.critico) return "critico";
+        if (porcentaje >= u.alerta) return "alerta";
+        if (porcentaje >= u.precaucion) return "precaucion";
+        return "normal";
+    }
+
+    function estadoDeLectura(lectura) {
+        if (!lectura) return "offline";
+        const edad = (Date.now() - new Date(lectura.created_at).getTime()) / 1000;
+        if (edad > SENSOR_CONFIG.segundosOffline) return "offline";
+        return clasificarNivel(Number(lectura.nivel_porcentaje));
+    }
+
+    function tiempoRelativo(iso) {
+        const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+        if (s < 60) return `hace ${s} s`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `hace ${m} min`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `hace ${h} h`;
+        return `hace ${Math.floor(h / 24)} d`;
+    }
+
+    async function obtenerLecturas(n) {
+        const { data, error } = await window.supabase
+            .from(SENSOR_CONFIG.tabla)
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(n);
+        if (error) throw error;
+        return data || [];
+    }
+
+    function suscribirLecturas(callback) {
+        let activo = true;
+        let debounce = null;
+
+        const refrescar = async () => {
+            if (!activo) return;
+            try {
+                const lecturas = await obtenerLecturas(SENSOR_CONFIG.historial);
+                if (activo) callback(lecturas, null);
+            } catch (e) {
+                console.error("Error leyendo sensor:", e);
+                if (activo) callback(null, e);
+            }
+        };
+
+        refrescar();
+        const poll = setInterval(refrescar, SENSOR_CONFIG.pollingMs);
+
+        let canal = null;
+        try {
+            canal = window.supabase
+                .channel("lecturas-" + Math.random().toString(36).slice(2))
+                .on("postgres_changes",
+                    { event: "INSERT", schema: "public", table: SENSOR_CONFIG.tabla },
+                    () => {
+                        clearTimeout(debounce);
+                        debounce = setTimeout(refrescar, 500);
+                    })
+                .subscribe();
+        } catch (e) {
+            console.warn("Realtime no disponible, se usa solo polling:", e);
+        }
+
+        return function detener() {
+            activo = false;
+            clearInterval(poll);
+            clearTimeout(debounce);
+            if (canal) window.supabase.removeChannel(canal);
+        };
+    }
+
+    function renderSparkline(lecturasDesc) {
+        if (!lecturasDesc || lecturasDesc.length < 2) return "";
+        const datos = [...lecturasDesc].reverse().map(l => Number(l.nivel_porcentaje));
+        const W = 300, H = 60, pad = 4;
+        const paso = (W - pad * 2) / (datos.length - 1);
+        const puntos = datos.map((v, i) => {
+            const x = pad + i * paso;
+            const y = H - pad - (v / 100) * (H - pad * 2);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        return `<svg class="sensor-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+                    <polyline points="${puntos}"></polyline>
+                </svg>`;
+    }
+
+    function renderTarjetaSensor(lecturasDesc, error, opciones) {
+    // opciones.sinMensaje = true -> oculta los avisos para ciudadanos (uso en dashboard)
+    opciones = opciones || {};
+        if (error) {
+            return `<div class="sensor-card nivel-offline">
+                        <div class="sensor-titulo">📡 Nivel del río en tiempo real</div>
+                        <div class="sensor-msg">❌ No se pudo consultar el sensor.</div>
+                    </div>`;
+        }
+
+        const ultima = lecturasDesc && lecturasDesc[0];
+        const estado = estadoDeLectura(ultima);
+        const info = NIVELES[estado];
+
+        if (!ultima) {
+            return `<div class="sensor-card nivel-offline">
+                        <div class="sensor-titulo">📡 Nivel del río en tiempo real</div>
+                        <span class="sensor-estado">${info.emoji} ${info.texto}</span>
+                        <div class="sensor-msg">Aún no hay datos del sensor.</div>
+                    </div>`;
+        }
+
+        const pct = Number(ultima.nivel_porcentaje);
+        return `
+            <div class="sensor-card nivel-${estado}">
+                <div class="sensor-titulo">📡 Nivel del río en tiempo real</div>
+                <span class="sensor-estado">${info.emoji} ${info.texto}</span>
+                <div class="sensor-pct">${pct.toFixed(0)}%</div>
+                <div class="sensor-barra"><div class="sensor-barra-relleno" style="width:${pct}%"></div></div>
+                ${(opciones.sinMensaje && estado !== "offline") ? "" : `<div class="sensor-msg">${info.mensaje}</div>`}
+                ${renderSparkline(lecturasDesc)}
+                <div class="sensor-meta">
+                    Última lectura ${tiempoRelativo(ultima.created_at)} · Sensor: ${escapeHtml(ultima.sensor_id)}
+                </div>
+            </div>`;
+    }
+
+    // Exponer a todo el resto del código
+    window.SENSOR_CONFIG = SENSOR_CONFIG;
+    window.NIVELES = NIVELES;
+    window.escapeHtml = escapeHtml;
+    window.clasificarNivel = clasificarNivel;
+    window.suscribirLecturas = suscribirLecturas;
+    window.renderTarjetaSensor = renderTarjetaSensor;
+
+    console.log("✅ Sensor incrustado cargado correctamente.");
+})();
+
+// ========================================
 // NAVEGACIÓN COMPLETA ECOALERTA
 // ========================================
 
-// ========================================
-// CONFIGURACIÓN (cambia aquí lo que necesites para el video)
-// ========================================
-const ALERTA_SIMULADA_ACTIVA = true;          // Alerta de prueba a los 15 s de abrir la app
-const ESCUCHAR_SENSOR_REALTIME = true;        // Poner en false si NO quieres alertas por mediciones del dashboard
-const UMBRAL_ALERTA = 2000;                   // Mismo umbral que el ESP32 y el dashboard
-const PAUSA_ENTRE_ALERTAS_MS = 5 * 60 * 1000; // 5 minutos entre alertas del sensor
-const ICONO_NOTIFICACION = "file.jpg";        // Tu logo (en index.html es file.jpg)
+// Respaldo: funciona aunque sensor.js no cargue
+if (typeof escapeHtml !== "function") {
+    window.escapeHtml = function (texto) {
+        return String(texto ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    };
+}
 
 // ========================================
 // DATOS DE LOCALIDADES Y BARRIOS
@@ -31,62 +201,43 @@ const TIPOS_PROBLEMA = [
     "Otros"
 ];
 
+const MAX_EVIDENCIA_MB = 20;
+
 // ========================================
 // VARIABLES GLOBALES
 // ========================================
 let usuarioActual = null;
-let alertaSimuladaActiva = false;   // (antes estaba al final del archivo)
-let seccionActual = "inicio";
-let ultimaAlertaSensor = 0;
+let detenerSensor = null;   // función para cancelar la suscripción al sensor
 
 // ========================================
-// UTILIDADES
+// SENSOR: iniciar / detener monitoreo
 // ========================================
-
-// Evita que texto escrito por usuarios se interprete como HTML
-function escaparHTML(texto) {
-    if (texto === null || texto === undefined) return "";
-    return String(texto)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
-// Notificación del sistema, segura (no rompe la app si el navegador no la soporta)
-function mostrarNotificacion(titulo, cuerpo) {
-    try {
-        if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(titulo, { body: cuerpo, icon: ICONO_NOTIFICACION });
-        }
-    } catch (e) {
-        console.warn("Notificación no soportada en este dispositivo:", e);
+function detenerMonitoreoSensor() {
+    if (detenerSensor) {
+        detenerSensor();
+        detenerSensor = null;
     }
 }
 
-// Aviso dentro de la app (no bloquea la pantalla como alert())
-function mostrarBannerAlerta(mensaje) {
-    const anterior = document.getElementById("banner-alerta");
-    if (anterior) anterior.remove();
+function iniciarMonitoreoSensor() {
+    detenerMonitoreoSensor();
 
-    const banner = document.createElement("div");
-    banner.id = "banner-alerta";
-    banner.style.cssText = `
-        position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-        width: 92%; max-width: 460px; z-index: 1000;
-        background: #fee2e2; color: #7f1d1d; border-left: 6px solid #991b1b;
-        padding: 14px 16px; border-radius: 14px; text-align: left;
-        box-shadow: 0 8px 24px rgba(153, 27, 27, 0.25); font-size: 14px;
-    `;
-    banner.innerHTML = `
-        <strong style="color:#991b1b;">🚨 ALERTA ECOALERTA</strong><br>
-        ${escaparHTML(mensaje)}
-        <button id="cerrar-banner" style="float:right; padding:2px 10px; margin-top:-22px; background:none; color:#991b1b; font-size:18px;">✕</button>
-    `;
-    document.body.appendChild(banner);
-    document.getElementById("cerrar-banner").addEventListener("click", () => banner.remove());
-    setTimeout(() => { if (banner.parentNode) banner.remove(); }, 12000);
+    if (typeof window.supabase === "undefined" ||
+        typeof suscribirLecturas !== "function" ||
+        typeof renderTarjetaSensor !== "function") {
+        const c = document.getElementById("sensor-container");
+        if (c) c.innerHTML = `<p style="color:red;">❌ Sensor no disponible.</p>`;
+        return;
+    }
+
+    detenerSensor = suscribirLecturas(function (lecturas, error) {
+        const c = document.getElementById("sensor-container");
+        if (!c) {              // el usuario cambió de sección
+            detenerMonitoreoSensor();
+            return;
+        }
+        c.innerHTML = renderTarjetaSensor(lecturas, error);
+    });
 }
 
 // ========================================
@@ -106,12 +257,18 @@ async function verificarSesion() {
     if (session) {
         usuarioActual = session.user;
         console.log("Usuario autenticado:", usuarioActual.email);
-        if (seccionActual === "perfil") {
-            mostrarPerfil();
-        }
     } else {
         console.log("No hay sesión activa.");
     }
+}
+
+// ========================================
+// MENÚ INFERIOR: marcar la opción activa
+// ========================================
+function marcarNavActivo(seccion) {
+    document.querySelectorAll("nav button[data-seccion]").forEach(function (b) {
+        b.classList.toggle("activo", b.dataset.seccion === seccion);
+    });
 }
 
 // ========================================
@@ -119,9 +276,10 @@ async function verificarSesion() {
 // ========================================
 function mostrarSeccion(seccion) {
     const contenido = document.getElementById("contenido");
-    seccionActual = seccion;
+    marcarNavActivo(seccion);
 
-    // Restablecer el ancho (el juego lo amplía)
+    // Al cambiar de sección: detener sensor y restaurar el ancho normal
+    detenerMonitoreoSensor();
     contenido.style.maxWidth = "";
 
     if (seccion === "inicio") {
@@ -185,7 +343,7 @@ function mostrarSeccion(seccion) {
                 <label for="descripcion">Descripción (opcional)</label>
                 <textarea id="descripcion" rows="4" placeholder="Cuéntanos más detalles..."></textarea>
 
-                <label for="evidencia">Adjuntar foto o video (opcional)</label>
+                <label for="evidencia">📷 Foto o video (opcional, máx. ${MAX_EVIDENCIA_MB} MB)</label>
                 <input type="file" id="evidencia" accept="image/*,video/*">
 
                 <button type="submit" id="btnEnviarReporte">Enviar reporte</button>
@@ -204,8 +362,7 @@ function mostrarSeccion(seccion) {
             selectBarrio.innerHTML = '<option value="">-- Selecciona un barrio --</option>';
 
             if (localidadSeleccionada && LOCALIDADES[localidadSeleccionada]) {
-                const barrios = LOCALIDADES[localidadSeleccionada];
-                for (let barrio of barrios) {
+                for (let barrio of LOCALIDADES[localidadSeleccionada]) {
                     const option = document.createElement("option");
                     option.value = barrio;
                     option.textContent = barrio;
@@ -223,6 +380,8 @@ function mostrarSeccion(seccion) {
             const tipo = document.getElementById("tipo").value;
             const gravedad = document.getElementById("gravedad").value;
             const descripcion = document.getElementById("descripcion").value;
+            const archivo = document.getElementById("evidencia").files[0];
+            const btn = document.getElementById("btnEnviarReporte");
 
             if (!localidad || !barrio || !tipo) {
                 alert("Por favor, completa los campos obligatorios (localidad, barrio y tipo).");
@@ -235,54 +394,55 @@ function mostrarSeccion(seccion) {
             }
             const supabase = window.supabase;
 
-            const btnEnviar = document.getElementById("btnEnviarReporte");
-            btnEnviar.disabled = true;
-            btnEnviar.textContent = "Enviando...";
+            if (archivo && archivo.size > MAX_EVIDENCIA_MB * 1024 * 1024) {
+                alert(`⚠️ El archivo supera los ${MAX_EVIDENCIA_MB} MB. Elige uno más liviano.`);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Enviando...";
 
             try {
-                // ----------------------------------------
-                // SUBIR EVIDENCIA (foto o video) - opcional
-                // ----------------------------------------
-                const archivo = document.getElementById("evidencia").files[0];
-                let fotoUrl = null;
+                let evidenciaUrl = null;
+                let evidenciaTipo = null;
 
+                // 1. Subir foto/video (si hay)
                 if (archivo) {
-                    const nombreSeguro = archivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-                    const nombreArchivo = `${Date.now()}_${nombreSeguro}`;
+                    const ext = (archivo.name.split(".").pop() || "bin")
+                        .toLowerCase().replace(/[^a-z0-9]/g, "");
+                    const ruta = `${usuarioActual.id}/${Date.now()}.${ext}`;
 
-                    const { error: uploadError } = await supabase.storage
+                    const { error: errSubida } = await supabase.storage
                         .from("evidencias")
-                        .upload(nombreArchivo, archivo);
+                        .upload(ruta, archivo, { contentType: archivo.type });
 
-                    if (uploadError) {
-                        console.error("Error al subir archivo:", uploadError);
-                        alert("❌ Error al subir el archivo: " + uploadError.message);
+                    if (errSubida) {
+                        console.error("Error subiendo archivo:", errSubida);
+                        alert(`❌ No se pudo subir el archivo: ${errSubida.message}`);
                         return;
                     }
 
-                    const { data: urlData } = supabase.storage
-                        .from("evidencias")
-                        .getPublicUrl(nombreArchivo);
-
-                    fotoUrl = urlData.publicUrl;
+                    const { data: pub } = supabase.storage.from("evidencias").getPublicUrl(ruta);
+                    evidenciaUrl = pub.publicUrl;
+                    evidenciaTipo = archivo.type.startsWith("video") ? "video" : "imagen";
                 }
 
+                // 2. Guardar el reporte
                 const reporte = {
                     usuario_id: usuarioActual.id,
                     tipo: tipo,
                     descripcion: descripcion || null,
                     ubicacion: `${localidad} - ${barrio}`,
                     direccion: direccion || null,
-                    foto_url: fotoUrl,
                     latitud: null,
                     longitud: null,
                     gravedad: gravedad,
-                    estado: "reportado"
+                    estado: "reportado",
+                    evidencia_url: evidenciaUrl,
+                    evidencia_tipo: evidenciaTipo
                 };
 
-                const { error } = await supabase
-                    .from("reportes")
-                    .insert([reporte]);
+                const { error } = await supabase.from("reportes").insert([reporte]);
 
                 if (error) {
                     console.error("Error de Supabase:", error);
@@ -290,30 +450,30 @@ function mostrarSeccion(seccion) {
                 } else {
                     alert("✅ ¡Reporte enviado con éxito! Gracias por ayudar al río.");
                     document.getElementById("formReporte").reset();
-                    document.getElementById("barrio").innerHTML = '<option value="">-- Primero selecciona una localidad --</option>';
+                    selectBarrio.innerHTML = '<option value="">-- Primero selecciona una localidad --</option>';
                 }
             } catch (err) {
                 console.error("Error inesperado:", err);
                 alert(`❌ Error inesperado: ${err.message}`);
             } finally {
-                // El botón siempre se vuelve a habilitar (si el formulario sigue en pantalla)
-                const btn = document.getElementById("btnEnviarReporte");
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = "Enviar reporte";
-                }
+                btn.disabled = false;
+                btn.textContent = "Enviar reporte";
             }
         });
     }
     else if (seccion === "alertas") {
         contenido.innerHTML = `
             <h2>🚨 Alertas</h2>
-            <p>Aquí puedes ver el estado de tus reportes.</p>
+            <p>Estado actual del río y de tus reportes.</p>
+
+            <div id="sensor-container"><p>Cargando estado del río...</p></div>
+
             <div id="alertas-container">
                 <p>Cargando tus reportes...</p>
             </div>
             <button onclick="mostrarSeccion('inicio')" style="margin-top:16px;">Volver al inicio</button>
         `;
+        iniciarMonitoreoSensor();
         cargarAlertasUsuario();
     }
     else if (seccion === "jugar") {
@@ -338,7 +498,6 @@ function mostrarSeccion(seccion) {
                     id="iframeJuego"
                     src="https://angierodriguezp04-glitch.github.io/Rescate_Rio-Tunjuelito/"
                     style="width: 100%; height: 100%; border: none;"
-                    allow="fullscreen"
                     allowfullscreen
                 ></iframe>
             </div>
@@ -355,27 +514,14 @@ function mostrarSeccion(seccion) {
 // FUNCIÓN: Pantalla completa del juego
 // ========================================
 function abrirJuegoPantallaCompleta() {
-    const contenedor = document.getElementById("contenedorJuego");
-    if (!contenedor) return;
-
-    try {
-        if (contenedor.requestFullscreen) {
-            contenedor.requestFullscreen();
-        } else if (contenedor.webkitRequestFullscreen) { // Safari
-            contenedor.webkitRequestFullscreen();
-        } else if (contenedor.msRequestFullscreen) {
-            contenedor.msRequestFullscreen();
-        } else {
-            alert("Tu navegador no permite pantalla completa. Usa el botón de 'Abrir en pestaña nueva'.");
-        }
-    } catch (e) {
-        console.warn("No se pudo activar pantalla completa:", e);
-        alert("No se pudo activar la pantalla completa. Usa 'Abrir en pestaña nueva'.");
-    }
+    const cont = document.getElementById("contenedorJuego");
+    if (!cont) return;
+    if (cont.requestFullscreen) cont.requestFullscreen();
+    else if (cont.webkitRequestFullscreen) cont.webkitRequestFullscreen();
 }
 
 // ========================================
-// FUNCIÓN: Cargar alertas del usuario (con etiquetas de estado)
+// FUNCIÓN: Cargar reportes del usuario (con estado y evidencia)
 // ========================================
 async function cargarAlertasUsuario() {
     const container = document.getElementById("alertas-container");
@@ -401,6 +547,11 @@ async function cargarAlertasUsuario() {
 
         if (error) throw error;
 
+        if (!reportes || reportes.length === 0) {
+            container.innerHTML = `<p>No has enviado ningún reporte aún.</p>`;
+            return;
+        }
+
         const nombresEstados = {
             "reportado": "🔴 Reportado",
             "en_revision": "🟡 En revisión",
@@ -408,33 +559,11 @@ async function cargarAlertasUsuario() {
             "solucionado": "🟢 Solucionado"
         };
 
-        let html = "";
-
-        // Tarjeta roja de la alerta simulada (arriba de todo)
-        if (alertaSimuladaActiva) {
-            html += `
-                <div style="background: #fee2e2; border-left: 5px solid #991b1b; padding: 16px; border-radius: 14px; margin-bottom: 16px; text-align: left; box-shadow: 0 4px 10px rgba(153, 27, 27, 0.1);">
-                    <h3 style="color: #991b1b; margin-bottom: 8px;">🚨 ALERTA AUTOMÁTICA</h3>
-                    <p style="color: #7f1d1d; font-size: 14px; margin-bottom: 8px;"><strong>Sensor de nivel:</strong> Nivel elevado detectado</p>
-                    <p style="color: #7f1d1d; font-size: 14px; margin-bottom: 8px;"><strong>Punto:</strong> Punto 1 (Tunjuelito)</p>
-                    <p style="color: #7f1d1d; font-size: 14px;"><strong>Estado:</strong> ⚠️ Posible riesgo de inundación</p>
-                    <small style="color: #991b1b; display:block; margin-top:10px;">Hace unos segundos</small>
-                </div>
-            `;
-        }
-
-        if (!reportes || reportes.length === 0) {
-            html += `<p>No has enviado ningún reporte aún.</p>`;
-            container.innerHTML = html;
-            return;
-        }
-
-        html += `<h3 style="text-align:left; margin-bottom:14px; color:#1a4d4e;">📋 Tus reportes (${reportes.length})</h3>`;
+        let html = `<h3 style="text-align:left; margin-bottom:14px; color:#1a4d4e;">📋 Tus reportes (${reportes.length})</h3>`;
 
         for (let r of reportes) {
-            const estado = r.estado || "reportado";
-            const estadoTexto = nombresEstados[estado] || estado.toUpperCase();
-            const claseEstado = `estado-${estado}`;
+            const estadoTexto = nombresEstados[r.estado] || escapeHtml((r.estado || "").toUpperCase());
+            const claseEstado = `estado-${escapeHtml(r.estado || "reportado")}`;
             const fecha = new Date(r.fecha_reporte).toLocaleString("es-CO", {
                 day: "2-digit",
                 month: "short",
@@ -443,13 +572,21 @@ async function cargarAlertasUsuario() {
                 minute: "2-digit"
             });
 
+            let evidenciaHtml = "";
+            if (r.evidencia_url) {
+                evidenciaHtml = r.evidencia_tipo === "video"
+                    ? `<video src="${escapeHtml(r.evidencia_url)}" controls style="width:100%; border-radius:10px; margin-top:8px;"></video>`
+                    : `<img src="${escapeHtml(r.evidencia_url)}" alt="Evidencia" style="width:100%; border-radius:10px; margin-top:8px;">`;
+            }
+
             html += `
                 <div class="tarjeta-reporte">
-                    <strong>${escaparHTML(r.tipo)}</strong>
-                    <div class="fila-info">📍 <strong>Ubicación:</strong> ${escaparHTML(r.ubicacion) || "N/A"}</div>
-                    ${r.direccion ? `<div class="fila-info">🏠 <strong>Dirección:</strong> ${escaparHTML(r.direccion)}</div>` : ""}
-                    <div class="fila-info">⚠️ <strong>Gravedad:</strong> ${escaparHTML(r.gravedad || "media")}</div>
-                    ${r.descripcion ? `<div class="fila-info">📝 ${escaparHTML(r.descripcion)}</div>` : ""}
+                    <strong>${escapeHtml(r.tipo)}</strong>
+                    <div class="fila-info">📍 <strong>Ubicación:</strong> ${escapeHtml(r.ubicacion || "N/A")}</div>
+                    ${r.direccion ? `<div class="fila-info">🏠 <strong>Dirección:</strong> ${escapeHtml(r.direccion)}</div>` : ""}
+                    <div class="fila-info">⚠️ <strong>Gravedad:</strong> ${escapeHtml(r.gravedad || "media")}</div>
+                    ${r.descripcion ? `<div class="fila-info">📝 ${escapeHtml(r.descripcion)}</div>` : ""}
+                    ${evidenciaHtml}
                     <div style="margin-top:10px;">
                         <span class="estado-badge ${claseEstado}">${estadoTexto}</span>
                     </div>
@@ -470,15 +607,18 @@ async function cargarAlertasUsuario() {
 // FUNCIÓN: Mostrar perfil
 // ========================================
 function mostrarPerfil() {
+    marcarNavActivo("perfil");
+    detenerMonitoreoSensor();
     const contenido = document.getElementById("contenido");
-    seccionActual = "perfil";
+    contenido.style.maxWidth = "";
+
     if (usuarioActual) {
         contenido.innerHTML = `
             <div class="perfil">
                 <div class="icono-perfil" style="font-size:60px;">👤</div>
                 <h2>Mi perfil</h2>
-                <p><strong>Nombre:</strong> ${escaparHTML(usuarioActual.user_metadata?.nombre) || "Sin nombre"}</p>
-                <p><strong>Correo:</strong> ${escaparHTML(usuarioActual.email)}</p>
+                <p><strong>Nombre:</strong> ${escapeHtml(usuarioActual.user_metadata?.nombre || "Sin nombre")}</p>
+                <p><strong>Correo:</strong> ${escapeHtml(usuarioActual.email)}</p>
                 <button onclick="cerrarSesion()">Cerrar sesión</button>
                 <button onclick="mostrarSeccion('inicio')">Volver al inicio</button>
             </div>
@@ -501,6 +641,8 @@ function mostrarPerfil() {
 // REGISTRO REAL
 // ========================================
 function mostrarRegistro() {
+    marcarNavActivo("perfil");
+    detenerMonitoreoSensor();
     const contenido = document.getElementById("contenido");
     contenido.innerHTML = `
         <div class="registro">
@@ -589,6 +731,8 @@ function mostrarRegistro() {
 // LOGIN REAL
 // ========================================
 function mostrarLogin() {
+    marcarNavActivo("perfil");
+    detenerMonitoreoSensor();
     const contenido = document.getElementById("contenido");
     contenido.innerHTML = `
         <div class="login">
@@ -677,83 +821,13 @@ async function cerrarSesion() {
 }
 
 // ========================================
-// ALERTAS DEL SENSOR EN TIEMPO REAL (Supabase Realtime)
+// EJECUTAR AL CARGAR LA PÁGINA
 // ========================================
-function escucharAlertasSensor() {
-    if (typeof window.supabase === "undefined") {
-        console.error("Supabase no disponible para escuchar alertas del sensor.");
-        return;
+document.addEventListener("DOMContentLoaded", async function() {
+    try {
+        await verificarSesion();
+    } catch (e) {
+        console.error("Error verificando sesión:", e);
     }
-    const supabase = window.supabase;
-
-    supabase
-        .channel("mediciones-realtime")
-        .on(
-            "postgres_changes",
-            { event: "INSERT", schema: "public", table: "mediciones" },
-            (payload) => {
-                const valor = Number(payload.new.nivel_agua);
-                console.log("📡 Nueva medición recibida:", valor);
-
-                if (valor >= UMBRAL_ALERTA) {
-                    const ahora = Date.now();
-                    // Evitar alertas seguidas
-                    if (ahora - ultimaAlertaSensor < PAUSA_ENTRE_ALERTAS_MS) return;
-                    ultimaAlertaSensor = ahora;
-
-                    mostrarNotificacion("🚨 EcoAlerta", "Nivel alto detectado en el río Tunjuelito.");
-                    mostrarBannerAlerta("¡El nivel del agua ha subido! Posible riesgo de inundación.");
-                }
-            }
-        )
-        .subscribe((status) => {
-            console.log("Estado del canal Realtime:", status);
-        });
-}
-
-// ========================================
-// SIMULADOR DE ALERTA MÓVIL (PARA EL VIDEO)
-// ========================================
-function activarAlertaSimulada() {
-    // Pedir permiso de notificaciones si aún no se ha decidido
-    if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-    }
-
-    // 15 segundos después de abrir la app
-    setTimeout(() => {
-        alertaSimuladaActiva = true;
-        console.log("🚨 ¡Alerta simulada activada!");
-
-        mostrarNotificacion(
-            "🚨 ALERTA ECOALERTA",
-            "Posible riesgo de inundación. El nivel del agua en el Punto 1 ha subido."
-        );
-        mostrarBannerAlerta("El sensor ha detectado un nivel elevado de agua. Posible riesgo de inundación.");
-
-        // Si el usuario está viendo "Alertas", se actualiza al instante
-        if (seccionActual === "alertas") {
-            cargarAlertasUsuario();
-        }
-    }, 15000);
-}
-
-// ========================================
-// EJECUTAR AL CARGAR LA PÁGINA (un solo DOMContentLoaded)
-// ========================================
-document.addEventListener("DOMContentLoaded", function() {
-    verificarSesion();
-
-    // Pedir permiso para notificaciones del navegador
-    if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-    }
-
-    if (ESCUCHAR_SENSOR_REALTIME) {
-        escucharAlertasSensor();
-    }
-
-    if (ALERTA_SIMULADA_ACTIVA) {
-        activarAlertaSimulada();
-    }
+    mostrarSeccion("inicio");   // así el estado del río aparece desde el inicio
 });
